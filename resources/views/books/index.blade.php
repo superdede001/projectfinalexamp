@@ -1,294 +1,189 @@
-@extends('layouts.app')
-
-@section('title', 'Books List')
+@extends('layout')
 
 @section('content')
-<style>
-    /* === TABLE STYLING === */
-    table.table {
-        border: none;
-        border-collapse: collapse;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #fdfdfd;
-    }
-    table.table th,
-    table.table td {
-        border-bottom: 1px solid #e0e0e0;
-        vertical-align: middle;
-        padding: 12px 16px;
-    }
-    table.table thead {
-        background: linear-gradient(135deg, #4b6cb7, #182848);
-        color: #fff;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-    table.table tbody tr {
-        transition: background-color 0.3s ease;
-    }
-    table.table tbody tr:hover {
-        background-color: #f1f5f9;
-    }
-    table.table td span {
-        display: inline-block;
-        margin-right: 4px;
-    }
+<div class="container py-4">
 
-    /* === NAVBAR STYLING === */
-    .navbar {
-        background: linear-gradient(90deg, #1c1c1c, #3a3a3a);
-        box-shadow: 0 3px 12px rgba(0,0,0,0.2);
-        border-radius: 8px;
-    }
-    .navbar-brand {
-        font-weight: 700;
-        color: #f8e1a1 !important;
-        letter-spacing: 1px;
-        font-size: 1.3rem;
-    }
-    .navbar-nav .nav-link {
-        color: #e0e0e0 !important;
-        font-weight: 500;
-        padding: 10px 16px;
-        border-radius: 8px;
-        transition: all 0.3s ease-in-out;
-    }
-    .navbar-nav .nav-link:hover {
-        background-color: rgba(248,225,161,0.2);
-        color: #f8e1a1 !important;
-    }
-    .navbar-nav .nav-link.active {
-        background-color: #f8e1a1;
-        color: #1c1c1c !important;
-        font-weight: 600;
-    }
+    {{-- FILTER FORM --}}
+    <div class="card shadow-sm mb-4 border-0" style="border-radius: 12px; background-color: #fff;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
 
-    /* === FORM INPUTS === */
-    .form-control, .form-select {
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        transition: all 0.3s ease;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #4b6cb7;
-        box-shadow: 0 0 8px rgba(75,108,183,0.3);
-    }
+                {{-- Pencarian --}}
+                <div class="col-md-4 col-lg-3">
+                    <label for="keyword" class="form-label text-muted small">Cari (Judul/ISBN/Penulis/Penerbit)</label>
+                    <input type="text" name="keyword" id="keyword" class="form-control"
+                        placeholder="Search books..." value="{{ request('keyword') }}">
+                </div>
 
-    /* === BUTTONS === */
-    .btn-success {
-        background-color: #4b6cb7;
-        border-color: #4b6cb7;
-        transition: all 0.3s ease;
-        font-weight: 600;
-    }
-    .btn-success:hover {
-        background-color: #182848;
-        border-color: #182848;
-        box-shadow: 0 4px 10px rgba(24,40,72,0.3);
-    }
-    .btn-outline-primary {
-        border-color: #182848;
-        color: #182848;
-        transition: all 0.3s ease;
-    }
-    .btn-outline-primary:hover {
-        background-color: #182848;
-        color: #fdfdfd;
-        box-shadow: 0 4px 10px rgba(24,40,72,0.3);
-    }
-    .btn-outline-warning {
-        border-color: #f8e1a1;
-        color: #182848;
-        transition: all 0.3s ease;
-    }
-    .btn-outline-warning:hover {
-        background-color: #f8e1a1;
-        color: #182848;
-        box-shadow: 0 4px 10px rgba(248,225,161,0.3);
-    }
+                {{-- Penulis --}}
+                <div class="col-md-4 col-lg-3">
+                    <label for="author_id" class="form-label text-muted small">Penulis</label>
+                    <select name="author_id" id="author_id" class="form-select">
+                        <option value="">Semua Penulis</option>
+                        @foreach ($authors as $author)
+                        <option value="{{ $author->id }}" @selected(request('author_id')==$author->id)>
+                            {{ $author->nama }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
 
-    /* === HEADER === */
-    h2 {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-weight: 700;
-        color: #182848;
-        letter-spacing: 0.5px;
-    }
+                {{-- Urutkan --}}
+                <div class="col-md-4 col-lg-3">
+                    <label for="sort" class="form-label text-muted small">Urutkan Berdasarkan</label>
+                    <select name="sort" id="sort" class="form-select">
+                        <option value="weighted" @selected(request('sort', 'weighted' )=='weighted' )>Default (Rekomendasi)</option>
+                        <option value="rating" @selected(request('sort')=='rating' )>Rating Tertinggi</option>
+                        <option value="votes" @selected(request('sort')=='votes' )>Total Votes</option>
+                        <option value="popularity" @selected(request('sort')=='popularity' )>Popularitas Terbaru</option>
+                        <option value="alphabetical" @selected(request('sort')=='alphabetical' )>Judul A-Z</option>
+                    </select>
+                </div>
 
-    /* === BADGE STATUS === */
-    .badge {
-        font-weight: 600;
-        padding: 0.5em 0.7em;
-        border-radius: 0.5rem;
-    }
-    .bg-success { background-color: #2ecc71 !important; }
-    .bg-danger { background-color: #e74c3c !important; }
-    .bg-warning { background-color: #f1c40f !important; color: #182848 !important; }
-</style>
+                {{-- Tombol --}}
+                <div class="col-md-6 col-lg-3 d-grid gap-2 order-md-last">
+                    <button class="btn btn-brown">Terapkan Filter</button>
+                    <a href="{{ route('books.index') }}" class="btn btn-outline-secondary">Reset Filter</a>
+                </div>
 
+                <div class="col-12">
+                    <hr class="my-2">
+                </div>
 
-<h2 class="mb-4 fw-bold text-primary">📚 List of Books</h2>
+                {{-- Kategori --}}
+                <div class="col-md-6 col-lg-3">
+                    <label for="categories" class="form-label text-muted small">Kategori (Pilih banyak)</label>
+                    <select name="categories[]" id="categories" multiple class="form-select" size="3">
+                        @foreach($categories as $c)
+                        <option value="{{ $c->id }}" @selected(in_array($c->id, (array) request('categories', [])))>
+                            {{ $c->nama }}
+                        </option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted mt-1 d-block">
+                        <label class="me-3"><input type="radio" name="mode" value="or" @checked(request('mode', 'or' )=='or' )>
+                            OR (Salah Satu)</label>
+                        <label><input type="radio" name="mode" value="and" @checked(request('mode')=='and' )>
+                            AND (Semua)</label>
+                    </small>
+                </div>
 
-<form method="GET" action="/books" class="mb-4">
-    <div class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">🔍 Search</label>
-            <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="Search title...">
-        </div>
+                {{-- Rating --}}
+                <div class="col-md-6 col-lg-3">
+                    <label for="rating_min" class="form-label text-muted small">Rating Minimum/Maksimum</label>
+                    <div class="input-group">
+                        <input type="number" name="rating_min" placeholder="Min" class="form-control" min="1" max="10"
+                            value="{{ request('rating_min') }}">
+                        <input type="number" name="rating_max" placeholder="Max" class="form-control" min="1" max="10"
+                            value="{{ request('rating_max') }}">
+                    </div>
+                </div>
 
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">👤 Author</label>
-            <select name="author_id" class="form-select">
-                <option value="">All</option>
-                @foreach($authors as $a)
-                    <option value="{{ $a->id }}" {{ request('author_id') == $a->id ? 'selected' : '' }}>
-                        {{ $a->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+                {{-- Status & Lokasi --}}
+                <div class="col-md-6 col-lg-3">
+                    <label for="availability_status" class="form-label text-muted small">Status & Lokasi</label>
+                    <div class="d-flex gap-2">
+                        <select name="availability_status" id="availability_status" class="form-select w-50">
+                            <option value="">Semua Status</option>
+                            @foreach($availabilityStatuses as $status)
+                            <option value="{{ $status }}" @selected(request('availability_status')==$status)>
+                                {{ ucfirst($status) }}
+                            </option>
+                            @endforeach
+                        </select>
+                        <select name="store_location" id="store_location" class="form-select w-50">
+                            <option value="">Semua Lokasi</option>
+                            @foreach($storeLocations as $location)
+                            <option value="{{ $location }}" @selected(request('store_location')==$location)>
+                                {{ $location }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
 
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">🏷️ Category</label>
-            <select name="categories[]" class="form-select">
-                <option value="">All</option>
-                @foreach($categories as $c)
-                    <option value="{{ $c->id }}" {{ in_array($c->id, request('categories', [])) ? 'selected' : '' }}>
-                        {{ $c->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">📅 Year</label>
-            <div class="input-group">
-                <input type="number" name="year_start" class="form-control" placeholder="From" value="{{ request('year_start') }}">
-                <input type="number" name="year_end" class="form-control" placeholder="To" value="{{ request('year_end') }}">
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">🏬 Store</label>
-            <input type="text" name="store_location" class="form-control" value="{{ request('store_location') }}" placeholder="Location...">
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">⭐ Rating</label>
-            <div class="input-group">
-                <input type="number" name="rating_min" class="form-control" placeholder="Min" min="1" max="10" value="{{ request('rating_min') }}">
-                <input type="number" name="rating_max" class="form-control" placeholder="Max" min="1" max="10" value="{{ request('rating_max') }}">
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">📖 Status</label>
-            <select name="status" class="form-select">
-                <option value="">All</option>
-                <option value="available" {{ request('status') == 'available' ? 'selected' : '' }}>Available</option>
-                <option value="rented" {{ request('status') == 'rented' ? 'selected' : '' }}>Rented</option>
-                <option value="reserved" {{ request('status') == 'reserved' ? 'selected' : '' }}>Reserved</option>
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">↕️ Sort by</label>
-            <select name="sort" class="form-select" onchange="this.form.submit()">
-                <option value="">None</option>
-                <option value="rating" {{ request('sort') == 'rating' ? 'selected' : '' }}>Weighted Rating</option>
-                <option value="votes" {{ request('sort') == 'votes' ? 'selected' : '' }}>Total Votes</option>
-                <option value="popularity" {{ request('sort') == 'popularity' ? 'selected' : '' }}>Popularity (30d)</option>
-                <option value="alphabetical" {{ request('sort') == 'alphabetical' ? 'selected' : '' }}>Alphabetical</option>
-            </select>
-        </div>
-
-        <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-success w-100 fw-semibold">Search</button>
+                {{-- Tahun Terbit --}}
+                <div class="col-md-6 col-lg-3">
+                    <label for="year_from" class="form-label text-muted small">Tahun Terbit</label>
+                    <div class="input-group">
+                        <input type="number" name="year_from" placeholder="Dari Tahun" class="form-control"
+                            value="{{ request('year_from') }}">
+                        <input type="number" name="year_to" placeholder="Sampai Tahun" class="form-control"
+                            value="{{ request('year_to') }}">
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-</form>
 
-<!-- Notif -->
-@if (session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-         {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-@endif
+    {{-- DAFTAR BUKU --}}
+    <h3 class="mt-4 mb-3 fw-semibold" style="color: #4b2e05;">
+        Daftar Buku <span class="badge" style="background-color:#d4b996; color:#4b2e05;">Total: {{ $books->total() }}</span>
+    </h3>
 
-@if ($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-         <strong>Oops!</strong> {{ $errors->first() }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-@endif
-
-<!-- TABLE -->
-<div class="table-responsive shadow-sm rounded-3 border">
-    <table class="table table-hover align-middle mb-0">
-        <thead class="table-primary text-center">
-            <tr>
-                <th class="py-3">📘 Title</th>
-                <th>👤 Author</th>
-                <th>🏷️ Category</th>
-                <th>📅 Year</th>
-                <th>🏬 Store</th>
-                <th>⭐ Rating</th>
-                <th>🧮 Voters</th>
-                <th>📖 Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($books as $book)
-                <tr class="text-center">
-                    <td class="text-start fw-semibold">{{ $book->title }}</td>
-                    <td>{{ $book->author->name ?? '-' }}</td>
-                    <td>{{ $book->category->name ?? '-' }}</td>
-                    <td>{{ $book->publication_year }}</td>
-                    <td>{{ $book->store_location }}</td>
+    {{-- TABEL BUKU --}}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" style="border-radius: 10px; overflow: hidden;">
+            <thead style="background-color: #8b5e34; color: #fff;">
+                <tr class="text-uppercase small">
+                    <th style="width: 5%">#</th>
+                    <th>Judul</th>
+                    <th class="d-none d-lg-table-cell">Penulis</th>
+                    <th>Kategori</th>
+                    <th class="text-center d-none d-md-table-cell">Tahun</th>
+                    <th class="text-center">Rating</th>
+                    <th class="text-center d-none d-md-table-cell">Popularitas</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody style="background-color: #fff;">
+                @foreach($books as $book)
+                <tr style="border-bottom: 1px solid #f1e8dd;">
+                    <td>{{ $books->firstItem() + $loop->index }}</td>
                     <td>
-                        <span class="fw-semibold">
-                            {{ number_format($book->avg_rating, 2) }}
+                        <span class="fw-semibold" style="color:#4b2e05;">{{ $book->judul }}</span>
+                        @if($book->trending_status)
+                        <span class="badge bg-danger">HOT</span>
+                        @endif
+                        <div class="text-muted small d-lg-none">{{ $book->author->nama ?? '-' }}</div>
+                        <div class="text-muted small d-none d-md-block">ISBN: {{ $book->isbn }}</div>
+                    </td>
+                    <td class="d-none d-lg-table-cell">{{ $book->author->nama ?? '-' }}</td>
+                    <td>
+                        @forelse($book->categories as $cat)
+                        <span class="badge" style="background-color:#b08968; color:#fff;">{{ $cat->nama }}</span>
+                        @empty
+                        -
+                        @endforelse
+                    </td>
+                    <td class="text-center d-none d-md-table-cell">{{ $book->tahun_publis ?? '-' }}</td>
+                    <td class="text-center">
+                        <span class="fw-bold" style="color:#8b5e34;">{{ $book->avg_rating ?? '-' }}</span>
+                        <div class="text-muted small">({{ $book->votes_count }})</div>
+                    </td>
+                    <td class="text-center d-none d-md-table-cell">{{ $book->recent_popularity_score ?? '-' }}</td>
+                    <td class="text-center">
+                        <span class="badge" style="background-color:#d4b996; color:#4b2e05;">
+                            {{ ucfirst($book->availability_status ?? '-') }}
                         </span>
-                        @if($book->trending_diff > 0)
-                            <span class="text-success fw-bold ms-1" title="Trending up!">↑</span>
-                        @elseif($book->trending_diff < 0)
-                            <span class="text-danger fw-bold ms-1" title="Trending down!">↓</span>
+                        <div class="text-muted small">{{ $book->store_location ?? '-' }}</div>
+                    </td>
+                    <td class="text-center">
+                        @if($book->canRate)
+                        <a href="{{ route('ratings.create', $book->id) }}" class="btn btn-brown btn-sm">Rate</a>
                         @else
-                            <span class="text-secondary ms-1">–</span>
+                        <button class="btn btn-secondary btn-sm" disabled>Sudah dirating</button>
                         @endif
                     </td>
-                    <td>{{ $book->total_voters }}</td>
-                    <td>
-                        <span class="badge 
-                            @if($book->status == 'available') bg-success
-                            @elseif($book->status == 'rented') bg-danger
-                            @else bg-warning text-dark @endif">
-                            {{ ucfirst($book->status) }}
-                        </span>
-                    </td>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No books found.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
 
-<!-- PAGINATION -->
-<div class="mt-4 d-flex justify-content-center">
-    {{ $books->links() }}
-</div>
-
-<!-- ACTION BUTTONS -->
-<div class="d-flex gap-3 mt-4 justify-content-center">
-    <a href="/authors/top-authors" class="btn btn-outline-primary d-flex align-items-center gap-2 px-4">
-        <i class="bi bi-trophy-fill"></i> Top Authors
-    </a>
-    <a href="/ratings/create" class="btn btn-outline-warning d-flex align-items-center gap-2 px-4">
-        <i class="bi bi-star-fill text-warning"></i> Add Rating
-    </a>
+    <div class="d-flex justify-content-center mt-4">
+        {{ $books->appends(request()->except('page'))->links() }}
+    </div>
 </div>
 @endsection

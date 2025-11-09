@@ -1,16 +1,23 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\BookController;
-use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\RatingController;
-use App\Http\Controllers\TopAuthorsController;
+use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\CategoryController;
 
-Route::get('/', fn() => redirect('/books'));
-Route::get('/books', [BookController::class, 'index']);
-Route::get('/authors/top-authors', [AuthorController::class, 'topAuthors']);
-Route::get('/ratings/create', [RatingController::class, 'create']);
-Route::post('/ratings', [RatingController::class, 'store']);
-Route::get('/authors/top-authors', [TopAuthorsController::class, 'index']);
-Route::get('/ratings/create', [RatingController::class, 'create'])->name('ratings.create');
-Route::post('/ratings', [RatingController::class, 'store'])->name('ratings.store');
+Route::get('/books', [BookController::class, 'index'])->name('books.index');
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+// Buku
+Route::resource('books', BookController::class);
+// Rating
+Route::get('ratings/{book}/create', [RatingController::class, 'create'])->name('ratings.create');
+Route::post('ratings', [RatingController::class, 'store'])->name('ratings.store');
+
+// Author dan Category 
+Route::resource('categories', CategoryController::class)->only(['index']);
+Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
+
+Route::resource('home', HomeController::class)->only(['index']);

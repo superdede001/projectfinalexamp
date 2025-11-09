@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Category extends Model
+class category extends Model
 {
-    /** @use HasFactory<\Database\Factories\CategoryFactory> */
     use HasFactory;
-
-    public function books() { return $this->hasMany(Book::class); }
-
+    protected $guarded = [];
+    public function books()
+    {
+        return $this->hasMany(Book::class);
+    }
 }
